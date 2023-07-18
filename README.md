@@ -1,1 +1,2 @@
-# notes-taker-for-meeting
+
+# Notes taker for a meeting
