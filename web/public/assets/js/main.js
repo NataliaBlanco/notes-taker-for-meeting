@@ -1,7 +1,7 @@
 'use strict';
+
 let isListening = false;
-let isPaused = false;
-let pauseTimeout;
+let recognition;
 const pa = document.querySelector('.js-container');
 const buttonReset = document.querySelector('.btn-cntr_reset');
 const buttonStart = document.querySelector('.btn-cntr_record');
@@ -9,11 +9,6 @@ const buttonStop = document.querySelector('.btn-cntr_stop');
 
 window.SpeechRecognition =
   window.SpeechRecognition || window.webkitSpeechRecognition;
-
-let recognition = new SpeechRecognition();
-recognition.interimResults = true;
-recognition.lang = 'en-US';
-recognition.lang = 'es';
 
 function resetfn(e) {
   e.preventDefault();
@@ -25,52 +20,48 @@ function textParagraph(transcript) {
   let newp = `<p class="paragraph">${transcript}</p>`;
   pa.innerHTML += newp;
 }
+function startTranscript() {
+  if (!isListening) {
+    isListening = true;
+    recognition.start();
+  }
+}
+function stopTranscript() {
+  if (isListening) {
+    isListening = false;
+    recognition.stop();
+  }
+}
+
+buttonReset.addEventListener('click', resetfn);
 
 //events
-
-function notesTranscription() {
+if (SpeechRecognition) {
+  recognition = new SpeechRecognition();
+  recognition.interimResults = true;
+  recognition.lang = 'es';
+  recognition.onresult = (e) => {
+    const transcript = Array.from(e.results)
+      .map((result) => result[0].transcript)
+      .join('');
+    if (e.results[0].isFinal) {
+      textParagraph(transcript);
+    }
+  };
   recognition.onend = () => {
     if (isListening) {
       recognition.start();
     }
   };
-  recognition.start();
+  buttonStart.onclick = () => {
+    startTranscript();
+  };
+  buttonStop.onclick = () => {
+    stopTranscript();
+  };
+} else {
+  ('Your browser does not support recognition speech');
 }
-
-buttonReset.addEventListener('click', resetfn);
-buttonStart.addEventListener('click', () => {
-  if (!isListening) {
-    isListening = true;
-    notesTranscription();
-    recognition.addEventListener('result', (e) => {
-      const transcript = Array.from(e.results)
-        .map((result) => result[0])
-        .map((result) => result.transcript)
-        .join('');
-      if (e.results[0].isFinal) {
-        textParagraph(transcript);
-        isPaused = false;
-      } else {
-        if (!isPaused) {
-          clearTimeout(pauseTimeout);
-          pauseTimeout = setTimeout(() => {
-            isPaused = true;
-          }, 1500);
-        }
-      }
-    });
-  }
-});
-buttonStop.addEventListener('click', () => {
-  if (isListening) {
-    isListening = false;
-    clearTimeout(pauseTimeout);
-    recognition.stop();
-  }
-});
-
-//recognition.start();
-//recognition.addEventListener('end', recognition.start);
 
 // Habría que añadir un botón para empezar el evento, y otro con el que terminarlo , en el que te diera la opción de guardarlo en el LS
 //
